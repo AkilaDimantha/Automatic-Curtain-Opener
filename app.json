@@ -26,7 +26,8 @@
         "versionCode": 1,
         "foregroundImage": "./app/assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "package": "com.curtainopener"
     },
     "web": {
       "favicon": "./app/assets/favicon.png"

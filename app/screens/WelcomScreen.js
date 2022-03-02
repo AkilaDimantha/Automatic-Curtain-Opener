@@ -4,6 +4,7 @@ import { ImageBackground, StyleSheet, View , StatusBar, Image} from 'react-nativ
 import StyledButton from '../components/StyledButton';
 
 function WelcomScreen({navigation}){
+    //const {wsState} = route.params
     return (
         <View style = {styles.container}>
             <ImageBackground 
