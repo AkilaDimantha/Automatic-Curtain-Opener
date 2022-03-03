@@ -10,23 +10,28 @@ import Calibration from './app/screens/Calibration';
 import WindowsList from './app/screens/WindowsList';
 import Window from  './app/components/Window';
 import WindowEditer from './app/screens/WindowEditer';
+import SignInScreen from './app/screens/SignInScreen';
+import { SocketContext, ws } from './app/Configs/websocket';
 
 const Stack = createStackNavigator()
 
 export default function App() {
   return (
-    <View style = {styles.container}>
-      <NavigationContainer>
-        <Stack.Navigator initialRouteName = 'Home'>
-          <Stack.Screen options = {{headerShown: false}} name = 'Home' component={WelcomScreen}/>
-          <Stack.Screen options = {{headerShown: false}} name = 'WindowAdder' component={WindowAdder}/>
-          <Stack.Screen options = {{headerShown: false}} name = 'Calibration' component={Calibration}/>
-          <Stack.Screen options = {{headerShown: false}} name = 'WindowsList' component={WindowsList}/>
-          <Stack.Screen options = {{headerShown: false}} name = 'WindowEditer' component={WindowEditer}/>
-          <Stack.Screen options = {{headerShown: false}} name = 'Window' component={Window}/>
-        </Stack.Navigator>
-      </NavigationContainer>
+    <SocketContext.Provider value = {ws}>
+      <View style = {styles.container}>
+        <NavigationContainer>
+          <Stack.Navigator initialRouteName = 'SignInScreen'>
+            <Stack.Screen options = {{headerShown: false}} name = 'SignInScreen' component={SignInScreen}/>
+            <Stack.Screen options = {{headerShown: false}} name = 'Home' component={WelcomScreen}/>
+            <Stack.Screen options = {{headerShown: false}} name = 'WindowAdder' component={WindowAdder}/>
+            <Stack.Screen options = {{headerShown: false}} name = 'Calibration' component={Calibration}/>
+            <Stack.Screen options = {{headerShown: false}} name = 'WindowsList' component={WindowsList}/>
+            <Stack.Screen options = {{headerShown: false}} name = 'WindowEditer' component={WindowEditer}/>
+            <Stack.Screen options = {{headerShown: false}} name = 'Window' component={Window}/>
+          </Stack.Navigator>
+        </NavigationContainer>
     </View>
+    </SocketContext.Provider>
 
     
     

@@ -1,13 +1,82 @@
-import React from 'react';
+import React,{useContext,useState,useEffect} from 'react';
 import { View,Text,StyleSheet, TextInput, Pressable, Image,Dimensions} from 'react-native';
+import { SocketContext } from "../Configs/websocket";
 
 import StyledButton from './StyledButton';
 
 
 function Window({curtain}) {
 
-    const {closingHours,closingMinitues,location,openingHours,openingMinitues,windowNumber,navigation} = curtain ;
 
+
+    const {closingHours,closingMinitues,location,openingHours,openingMinitues,windowNumber,navigation,username} = curtain ;
+
+    const [serverMessages, setServerMessages] = useState([]);
+
+    const ws = useContext(SocketContext);
+
+     useEffect(() => {
+        const serverMessagesList = []
+        ws.onmessage = (e)=>{
+           // console.log(e.data)
+           serverMessagesList.push(e.data);
+           setServerMessages([...serverMessagesList])
+        }
+        
+
+      }, [])
+
+    //   useEffect(() => {
+    //     effect
+    //     return () => {
+    //         cleanup
+    //     }
+    // }, [input])
+     useEffect(() => {
+          const [finalmsg] = serverMessages.slice(-1)
+
+          if (finalmsg){
+            console.log(finalmsg)
+            const msgContent = JSON.parse(finalmsg)
+            if (msgContent.type == "control-curtain" && msgContent.success == true){
+                if(ws){
+                    navigation.navigate('WindowsList')   ;
+                }
+            }
+        }
+
+      },[serverMessages])
+    
+
+      const onClickOpen = () => {
+        myJson = JSON.stringify({
+            type:"control-curtain", 
+            message:{username: username, 
+                curtainId:windowNumber,
+                command:"open"  ,
+    
+                }
+            })
+        console.log(myJson)
+        ws.send(myJson );
+           
+
+       
+      }
+      const onClickClose = () => {
+        myJson = JSON.stringify({
+            type:"control-curtain", 
+            message:{username: username, 
+                curtainId:windowNumber,
+                command:"close"  ,
+    
+                }
+            })
+        ws.send(myJson );
+           
+
+       
+      }
 
     return (
         <View style = {styles.container}>
@@ -84,11 +153,11 @@ function Window({curtain}) {
                             type = 'secondary'
                             style = {styles.openButton}
                             content = 'Open'
-                            onPress = {() => navigation.navigate('Home')}/>
+                            onPress = {() => onClickOpen()}/>
                         <StyledButton 
                             type = 'secondary'
                             style = {styles.closeButton}
-                            onPress = {() => navigation.navigate('Home')}
+                            onPress = {() => onClickClose()}
                             content = 'Close'
                             />
                     </View>

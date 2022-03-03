@@ -1,34 +1,75 @@
-import React,{useState,useEffect} from 'react';
+import React,{useState,useEffect,useContext} from 'react';
 import { View,StyleSheet, Dimensions, ActivityIndicator,FlatList,Text} from 'react-native';
 
 import StyledButton from '../components/StyledButton';
 import Window from '../components/Window';
 
-const dataURL = 'https://api.thingspeak.com/channels/1373834/feeds.json?api_key=FMR8AWFRVK274X23'; 
+import { SocketContext } from '../Configs/websocket';
 
-function WindowsList({navigation}) {
+
+function WindowsList({route,navigation}) {
+
+    const {username} = route.params
+
+    const ws = useContext(SocketContext);
 
     const [isLoading, setLoading ] = useState(true);
+    const [serverMessages, setServerMessages] = useState([]);
     const [data,setData] = useState([{}]);
-
     function helpingFilter(item){
-        return {closingHours :item.field4.slice(0,item.field4.indexOf(":")), closingMinitues :item.field4.slice(item.field4.indexOf(":")+1), location : item.field2, openingHours :item.field3.slice(0,item.field3.indexOf(":")), openingMinitues :item.field3.slice(item.field3.indexOf(":")+1), windowNumber : item.field1, navigation : navigation}
+        return {closingHours :item.closeTime, closingMinitues :"00", location : item.location, openingHours :item.openTime, openingMinitues : "00", windowNumber : item.curtainId, navigation : navigation, username:username}
 
     };
 
     const dataFilter = (props) => {
         return(
            props.map(helpingFilter)
+        
         );
     };
 
-    useEffect (() => {
-        fetch(dataURL)
-            .then((response) => response.json())
-            .then((json) => setData(dataFilter(json.feeds)))
-            .catch((error) => alert(error))
-            .finally(() => setLoading(false));
-    },[]);
+    useEffect(() => {
+        const serverMessagesList = []
+        myJson = JSON.stringify({
+            type:"get-curtains", 
+            message:{username: username}
+            })
+        ws.send(myJson );
+        ws.onmessage = (e)=>{
+           serverMessagesList.push(e.data);
+           setServerMessages([...serverMessagesList])
+        }
+        
+      }, [])
+ 
+      useEffect(() => {
+          const [finalmsg] = serverMessages.slice(-1)
+ 
+          if (finalmsg){
+            
+            const msgContent = JSON.parse(finalmsg)
+            console.log(msgContent)
+            if (msgContent.type == "get-curtains" && msgContent.success == true){
+                if(ws){
+                
+                    setData(dataFilter(msgContent.message));
+                    setLoading(false);
+                }
+            }
+        }
+ 
+      },[serverMessages])
+    
+
+
+
+    // useEffect (() => {
+    //     fetch(dataURL)
+    //         .then((response) => response.json())
+    //         .then((json) => setData(dataFilter(json.feeds)))
+    //         .catch((error) => alert(error))
+    //         .finally(() => setLoading(false));
+    // },[]);
 
     return (
         <View>

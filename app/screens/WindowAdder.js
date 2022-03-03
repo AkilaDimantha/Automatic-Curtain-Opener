@@ -1,42 +1,93 @@
-import React,{useState,useEffect} from 'react';
-import { View,Text,StyleSheet, TextInput , ActivityIndicator} from 'react-native';
-import Axios from 'axios';
+import React,{useState,useEffect,useContext} from 'react';
+import { View,Text,StyleSheet, TextInput , ActivityIndicator, KeyboardAvoidingView,
+    ScrollView} from 'react-native';
+
+
+import { SocketContext } from '../Configs/websocket';
+
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view' ;
 
 import StyledButton from '../components/StyledButton';
 
-const dataUrl = 'https://api.thingspeak.com/channels/1373834/fields/8.json?api_key=FMR8AWFRVK274X23&results=1';
 
 
 
-function WindowAdder({navigation}) {
 
+function WindowAdder({route,navigation}) {
     
+    const {username} = route.params
 
     const [isLoading, setLoading ] = useState(true);
-    const [windowNumber, setWindowNumber] = useState(0);
-    const [curtain,setCurtain ] = useState({ location : '', openingHours : '', openingMinitues : '', closingHours : '', closingMinitues : '', numberOfWindows : 0 });
+    const [curtain,setCurtain ] = useState({ location : '', openingHours : '', openingMinitues : '', closingHours : '', closingMinitues : '',  id: 0 });
+    const [serverMessages, setServerMessages] = useState([]);
+    const ws = useContext(SocketContext);
 
-    useEffect (() => {
-        fetch(dataUrl)
-            .then((response) => response.json())
-            .then((json) => {json.feeds.length == 0 ? (setWindowNumber(1)):(setWindowNumber(eval(json.feeds[0].field8) + 1))})
-            .catch((error) => alert(error))
-            .finally(() => setLoading(false));
-    },[]);
+    useEffect(() => {
+       const serverMessagesList = []
+       ws.onmessage = (e)=>{
+          // console.log(e.data)
+          serverMessagesList.push(e.data);
+          setServerMessages([...serverMessagesList])
+       }
+       
+     }, [])
+
+     useEffect(() => {
+         const [finalmsg] = serverMessages.slice(-1)
+
+         if (finalmsg){
+           console.log(finalmsg)
+           const msgContent = JSON.parse(finalmsg)
+           if (msgContent.type == "add-curtain" && msgContent.success == true){
+               if(ws){
+                   navigation.navigate('Home')   ;
+               }
+           }
+       }
+
+     },[serverMessages])
+   
+
+     const onClick = () => {
+       myJson = JSON.stringify({
+           type:"add-curtain", 
+           message:{username: username, location: curtain.location,
+           curtainId : curtain.id,
+           openTime:curtain.openingHours,
+           closeTime : curtain.closingHours}
+           })
+       ws.send(myJson );
+    
+        }
+    // useEffect (() => {
+    //     fetch(dataUrl)
+    //         .then((response) => response.json())
+    //         .then((json) => {json.feeds.length == 0 ? (setWindowNumber(1)):(setWindowNumber(eval(json.feeds[0].field8) + 1))})
+    //         .catch((error) => alert(error))
+    //         .finally(() => setLoading(false));
+    // },[]);
 
     
 
     return (
         <View style = {styles.container}>
-            {isLoading ? (<ActivityIndicator/> ):
-                (<View style = {styles.textcontainer} >
-                    <Text style = {styles.title}>Window {windowNumber}</Text>
+          
+                <View style = {styles.textcontainer} >
+                    <Text style = {styles.title}>Window</Text>
                     <View style = {styles.locationContainer}>
                         <Text style = {styles.locationInputText} >Location</Text>
                         <TextInput 
                             style = {styles.locationInput}
                             onChangeText ={(value) => setCurtain(prevState => ({...prevState,location : value }))}
                             placeholder = 'e.g - Ground floor living room'
+                            multiline/>
+                    </View>
+                    <View style = {styles.idContainer}>
+                        <Text style = {styles.idInputText} >Curtain ID</Text>
+                        <TextInput 
+                            style = {styles.idInput}
+                            onChangeText ={(value) => setCurtain(prevState => ({...prevState,id : value }))}
+                            placeholder = 'e.g - 40404'
                             multiline/>
                     </View>
                     <Text style = {styles.openingTimeInputText} >Automatic Curtain Opening Time</Text>
@@ -54,7 +105,7 @@ function WindowAdder({navigation}) {
                         <View>
                         <TextInput 
                             textAlign = 'center'
-                            onChangeText ={(value) => setCurtain(prevState => ({...prevState,openingMinitues : value,numberOfWindows : windowNumber }))}
+                            onChangeText ={(value) => setCurtain(prevState => ({...prevState,openingMinitues : value }))}
                             keyboardType = 'number-pad'
                             style = {styles.openingMinituesInput}
                             placeholder = '00'
@@ -87,10 +138,11 @@ function WindowAdder({navigation}) {
                         <StyledButton 
                             type = 'primary'
                             content = 'OK'
-                            onPress = {() => {navigation.navigate('Calibration'),Axios.post('https://api.thingspeak.com/update?api_key=FOW5V50MX448DL8N',{"field1" : curtain.numberOfWindows , "field2" : curtain.location, "field3" : curtain.openingHours + ':' + curtain.openingMinitues, "field4" : curtain.closingHours + ':' + curtain.closingMinitues, "field5" : 0, "field7" : 1,"field8" : windowNumber})}}/>
+                            onPress = {() => onClick()}/>
                     </View>
             </View>
-            )}
+            
+        
         </View>
            
     );
@@ -112,8 +164,8 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor : '#777',
         padding : '2%',
-        marginTop : '10%',
-        marginBottom : '10%',
+        marginTop : '7%',
+        marginBottom : '7%',
         marginLeft : '5%',
         width : 250,
     },
@@ -194,7 +246,7 @@ const styles = StyleSheet.create({
     textcontainer : {
         flex : 1,
         alignItems : 'center',
-        marginTop : '25%',
+        marginTop : '15%',
     },
     title : {
         fontSize: 40,
@@ -202,6 +254,22 @@ const styles = StyleSheet.create({
     },
     timeInputText : {
 
+    },
+    idInput : {
+        backgroundColor : '#fff',
+        borderWidth: 1,
+        borderColor : '#777',
+        padding : '2%',
+        marginTop : '5%',
+        marginBottom : '7%',
+        marginLeft : '5%',
+        width : 250,
+    },
+    idInputText: {
+        marginTop : '8%',
+    },
+    idContainer : {
+        flexDirection : 'row',
     },
 })
 
